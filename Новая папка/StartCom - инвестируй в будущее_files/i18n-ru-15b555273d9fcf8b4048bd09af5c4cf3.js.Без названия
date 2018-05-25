@@ -1,0 +1,887 @@
+var ru = function (n, ord) {
+  var s = String(n).split('.'), i = s[0], v0 = !s[1], i10 = i.slice(-1),
+      i100 = i.slice(-2);
+  if (ord) return 'other';
+  return (v0 && i10 == 1 && i100 != 11) ? 'one'
+      : (v0 && (i10 >= 2 && i10 <= 4) && (i100 < 12
+          || i100 > 14)) ? 'few'
+      : (v0 && i10 == 0 || v0 && (i10 >= 5 && i10 <= 9)
+          || v0 && (i100 >= 11 && i100 <= 14)) ? 'many'
+      : 'other';
+};
+var number = function (value, name, offset) {
+  if (!offset) return value;
+  if (isNaN(value)) throw new Error('Can\'t apply offset:' + offset + ' to argument `' + name +
+                                    '` with non-numerical value ' + JSON.stringify(value) + '.');
+  return value - offset;
+};
+var plural = function (value, offset, lcfunc, data, isOrdinal) {
+  if ({}.hasOwnProperty.call(data, value)) return data[value];
+  if (offset) value -= offset;
+  var key = lcfunc(value, isOrdinal);
+  if (key in data) return data[key];
+  return data.other;
+};
+var select = function (value, data) {
+  if ({}.hasOwnProperty.call(data, value)) return data[value];
+  return data.other;
+};
+
+window.translations = {
+  _: {
+    name: function(d) { return "ru"; }
+  },
+  activationRequest: {
+    title: function(d) { return "Добро пожаловать в Чапорт!"; },
+    subtitlePasswordOnly: function(d) { return "Пожалуйста, придумайте себе пароль для завершения процесса активации:"; },
+    subtitleNameOnly: function(d) { return "Пожалуйста, укажите Ваше имя (его будут видеть посетители вашего сайта, фамилию указывать необязательно):"; },
+    subtitleBoth: function(d) { return "Пожалуйста, придумайте себе пароль и заполните приведённые ниже поля для завершения активации:"; },
+    errorPasswordsMismatch: function(d) { return "Пароли не совпадают"; },
+    errorEmptyFields: function(d) { return "Все поля обязательны"; },
+    labelName: function(d) { return "Имя"; },
+    labelPassword: function(d) { return "Пароль"; },
+    labelConfirmPassword: function(d) { return "Подтвердите пароль"; },
+    buttonSubmit: function(d) { return "Активировать аккаунт"; },
+    loading: function(d) { return "Загрузка..."; },
+    invalidCode: function(d) { return "Этот активационный код не работает: аккаунт либо был активирован ранее, либо в коде есть опечатка."; },
+    emailResend: function(d) { return "Отправить активационное письмо повторно"; },
+    emailResendWait: function(d) { return "Отправить снова через " + d.time; },
+    alertSuccessText: function(d) { return "Ваш аккаунт был успешно активирован."; }
+  },
+  alerts: {
+    noSeatsAvailable: function(d) { return "Нет свободных мест. Ваш статус будет изменён на \"" + d.status + "\", когда появится свободное место."; },
+    connectionFailed: function(d) { return "Не удалось установить соединение."; },
+    reconnecting: function(d) { return "Переподключение..."; },
+    connecting: function(d) { return "Подключение..."; },
+    connectionRestored: function(d) { return "Соединение успешно восстановлено"; },
+    updated: function(d) { return "Приложение успешно обновлено. Выполняется перезагрузка."; },
+    genericError: function(d) { return "Ошибка. Попробуйте обновить страницу."; },
+    genericWarning: function(d) { return "Ошибка. Попробуйте обновить страницу."; },
+    genericFatal: function(d) { return "Ошибка. Попробуйте обновить страницу."; },
+    internalError: function(d) { return "Внутренняя ошибка"; },
+    reloadLink: function(d) { return "Перезагрузить"; },
+    reconnectLink: function(d) { return "Переподключиться"; },
+    sessionExpired: function(d) { return "Сессия закончилась, пожалуйста снова войдите в приложение."; }
+  },
+  appearance: {
+    chatButtonColor: function(d) { return "Цвет чат-виджета"; },
+    customColor: function(d) { return "Другой цвет"; },
+    bgImage: function(d) { return "Фон с картинкой"; },
+    positionLeft: function(d) { return "Позиционировать слева"; },
+    textStatuses: function(d) { return "Отображать статусы сообщений текстом"; },
+    teamName: function(d) { return "Имя команды"; },
+    onlineWelcome: function(d) { return "Текст онлайн-приветствия"; },
+    offlineWelcome: function(d) { return "Текст оффлайн-приветствия"; },
+    widgetSound: function(d) { return "Звук сообщения в виджете"; },
+    emailRequest: function(d) { return "Форма запроса email"; },
+    requestEmailWhenOnline: function(d) { return "Запрашивать email, даже когда операторы онлайн"; },
+    requestPrivacyPolicyAgreement: function(d) { return "Запрашивать согласие на обработку персональных данных"; },
+    privacyPolicyUrl: function(d) { return "Ссылка на документ"; }
+  },
+  autoInvitations: {
+    defaultName: function(d) { return "Авто-приглашение"; },
+    notifyProOnly: function(d) { return "Для работы авто-приглашений Вам необходимо перейти на тариф \"PRO\"."; },
+    newAutoInvitation: function(d) { return "Новое Авто-приглашение"; },
+    editAutoInvitation: function(d) { return "Редактирование Авто-приглашения"; },
+    name: function(d) { return "Название"; },
+    namePlaceholder: function(d) { return "Например, \"Предложение помощи\" (видно только Вам)"; },
+    send: function(d) { return "Отправлять"; },
+    messageText: function(d) { return "Текст сообщения"; },
+    when: function(d) { return "Когда"; },
+    "if": function(d) { return "Если"; },
+    addCondition: function(d) { return "Добавить условие"; },
+    deleteAutoInvitation: function(d) { return "Удалить Авто-приглашение"; },
+    inviteWhen: function(d) { return "Приглашать, когда"; },
+    initialAutoInvitationMessage: function(d) { return "Здравствуйте! Чем я могу Вам помочь?"; },
+    joiners: {
+      and: function(d) { return "и"; },
+      or: function(d) { return "или"; }
+    },
+    matchers: {
+      equal_to: function(d) { return "="; },
+      not_equal_to: function(d) { return "≠"; },
+      contains: function(d) { return "Содержит"; },
+      does_not_contain: function(d) { return "Не содержит"; },
+      greater_than: function(d) { return ">"; },
+      less_than: function(d) { return "<"; }
+    },
+    operatorsOnlineOptions: {
+      online: function(d) { return "Операторы в онлайн"; },
+      offline: function(d) { return "Операторы в оффлайн"; },
+      any: function(d) { return "Не имеет значения, в сети ли операторы"; }
+    },
+    parameters: {
+      page_url: function(d) { return "URL страницы"; },
+      time_on_page: function(d) { return "Время на странице"; },
+      time_on_site: function(d) { return "Время на сайте"; },
+      page_views: function(d) { return "Просмотры страниц"; },
+      time_after_close: function(d) { return "Время после закрытия виджета"; }
+    },
+    units: {
+      sec: function(d) { return "сек."; }
+    }
+  },
+  bot: {
+    ecwidWelcomeFull: function(d) { return "Ваш аккаунт на Ecwid был успешно интегрирован с Chaport!\n\nВзгляните сами: " + d.storeUrl; },
+    ecwidWelcomeShort: function(d) { return "Ваш аккаунт на Ecwid был успешно интегрирован с Chaport!"; }
+  },
+  buttons: {
+    done: function(d) { return "Готово"; },
+    save: function(d) { return "Сохранить"; },
+    back: function(d) { return "Назад"; },
+    send: function(d) { return "Отправить"; },
+    "continue": function(d) { return "Продолжить"; },
+    finish: function(d) { return "Закончить"; },
+    close: function(d) { return "Закрыть"; },
+    cancel: function(d) { return "Отмена"; },
+    "delete": function(d) { return "Удалить"; },
+    edit: function(d) { return "Изменить"; },
+    authorize: function(d) { return "Разрешить"; },
+    continueAs: function(d) { return "Продолжить как " + d.userName; },
+    deny: function(d) { return "Отказать"; },
+    details: function(d) { return "Подробно"; },
+    goOnline: function(d) { return "Поставить статус \"Онлайн\""; },
+    keepAway: function(d) { return "Оставить статус \"Отошёл\""; }
+  },
+  chat: {
+    you: function(d) { return "Вы"; },
+    toYou: function(d) { return "Вам"; },
+    whomYou: function(d) { return "Вас"; },
+    operatorInvitedSomeoneElse: function(d) { return d.inviter + " пригласил " + d.invitee + " присоединиться к разговору"; },
+    operatorTranferedChat: function(d) { return d.initiator + " передал чат " + d.recepient; },
+    operatorBannedVisitor: function(d) { return d.operator + " заблокировал посетителя в чате"; },
+    operatorUnbannedVisitor: function(d) { return d.operator + " разблокировал посетителя в чате"; },
+    operatorEnteredChat: function(d) { return d.operatorName + " вошел в чат"; },
+    operatorJoinedChat: function(d) { return "Оператор " + d.operatorName + " присоединился к чату"; },
+    youJoinedChat: function(d) { return "Вы присоединились к чату"; },
+    visitorEnteredChat: function(d) { return d.visitorName + " вошел в чат"; },
+    visitorLeftChat: function(d) { return d.visitorName + " покинул чат"; },
+    visitorOpenedPage: function(d) { return "Посетитель открыл страницу \"" + d.pageTitle + "\""; },
+    titleNotificationMessageReceived: function(d) { return "Получено новое сообщение!"; },
+    notificationMessageReceived: function(d) { return "Вы получили новое сообщение"; },
+    notificationChatTransfer: function(d) { return "Вам передали разговор"; },
+    notificationInvite: function(d) { return "Вы были приглашены в разговор"; },
+    notificationFileTransfer: function(d) { return "Вам отправлен файл"; },
+    botIntro: function(d) { return "Привет! Я – Chaport-бот, и я помогу Вам освоиться здесь.\n\nПопробуйте наш чат в работе, пройдя по следующей ссылке: " + d.landingUrl + "\n\nДля установки чата на свой сайт, пройдите в раздел \"Настройки -> Код установки\"."; },
+    titleNewMessages: function(d) { return plural(d.count, 0, ru, { one: "(1) Новое сообщение получено", other: "(" + number(d.count, "count") + ") Новые сообщения получены" }); },
+    defaultVisitorName: function(d) { return "Посетитель " + "#" + d.i; },
+    goOnlineToChat: function(d) { return "Перейдите в онлайн для отправки сообщений"; },
+    inputMobileJoinLabel: function(d) { return "Начните печатать для входа в чат..."; },
+    inputJoinLabel: function(d) { return "Начните печатать или нажмите enter для входа в чат..."; },
+    editMessage: function(d) { return "Редактировать сообщение"; },
+    deleteMessage: function(d) { return "Удалить сообщение"; },
+    deleteMessageConfirm: function(d) { return "Вы уверены, что хотите удалить это сообщение?"; },
+    lastSeenOnline: function(d) { return "в сети"; },
+    lastSeenRecently: function(d) { return "недавно был в сети"; },
+    lastSeenHoursAgo: function(d) { return "был в сети " + plural(d.hours, 0, ru, { one: number(d.hours, "hours") + " час", few: number(d.hours, "hours") + " часа", other: number(d.hours, "hours") + " часов" }) + " назад"; },
+    lastSeenTodayAt: function(d) { return "был в сети сегодня в " + d.time; },
+    lastSeenYesterdayAt: function(d) { return "был в сети вчера в " + d.time; },
+    lastSeenDate: function(d) { return "был в сети " + d.date; },
+    fileSent: function(d) { return "Файл отправлен."; },
+    fileUnavailable: function(d) { return "Файл " + select(d.name, { undefined: "", other: "\"" + d.name + "\" " }) + "не доступен."; },
+    fileUploadProgress: function(d) { return "Загрузка..."; },
+    fileIsTooLarge: function(d) { return "Размер файлов для передачи должен быть не больше 10 МБ."; },
+    download: function(d) { return "Скачать"; },
+    exports: {
+      json: function(d) { return "JSON"; },
+      csv: function(d) { return "CSV"; }
+    },
+    sizes: {
+      b: function(d) { return d.number + " Б"; },
+      kb: function(d) { return d.number + " KБ"; },
+      mb: function(d) { return d.number + " MБ"; }
+    },
+    transcripts: {
+      visitor: function(d) { return "Посетитель"; },
+      team: function(d) { return "Команда"; },
+      activateToRequest: function(d) { return "Активируете аккаунт (проверьте электронную почту) для получения писем."; },
+      sent: function(d) { return "Текст переписки был отправлен на ваш электронный адрес."; },
+      sendFailed: function(d) { return "Не удалось отправить текст переписки."; }
+    }
+  },
+  chats: {
+    open: function(d) { return "Открытые"; },
+    all: function(d) { return "Все"; },
+    openChatsEmpty: function(d) { return "Нет открытых чатов"; },
+    allChatsEmpty: function(d) { return "Нет чатов"; },
+    youAreAlone: function(d) { return "(сейчас Вы один)"; },
+    filterAllOperators: function(d) { return "Все операторы"; },
+    filterYours: function(d) { return "Мои чаты"; },
+    filterOthers: function(d) { return "Чужие чаты"; },
+    filterAll: function(d) { return "Все чаты"; },
+    filterOperatorDeleted: function(d) { return d.name + " (Удален)"; },
+    close: function(d) { return "Закрыть"; },
+    unassigned: function(d) { return "Неназначенный"; },
+    banVisitor: function(d) { return "Заблокировать посетителя"; },
+    unbanVisitor: function(d) { return "Разблокировать посетителя"; },
+    transferChat: function(d) { return "Передать чат"; },
+    inviteOperator: function(d) { return "Пригласить оператора"; },
+    exportConversation: function(d) { return "Экспортировать чат"; },
+    deleteConversation: function(d) { return "Удалить чат"; },
+    confirmDelete: function(d) { return "Введите 'DELETE' и нажмите OK для того, чтобы удалить этот разговор со всеми связанными данными о посетителе. Предупреждение: после удаления восстановить данные будет нельзя!"; },
+    alertDelete: function(d) { return "Чтобы удалить разговор, введите 'DELETE' во всплывающем окне."; },
+    email: function(d) { return "Email"; },
+    emailTranscript: function(d) { return "Отправить переписку на email"; },
+    noChatSelected: function(d) { return "Чат не выбран"; },
+    upgradeToProLink: function(d) { return "Перейдите на PRO"; },
+    upgradeToProTail: function(d) { return "для просмотра полной информации:"; },
+    infoName: function(d) { return "Имя"; },
+    infoNamePlaceholder: function(d) { return "–"; },
+    infoEmail: function(d) { return "+ Добавить email"; },
+    infoEmailPlaceholder: function(d) { return "–"; },
+    infoPhone: function(d) { return "+ Добавить телефон"; },
+    infoPhonePlaceholder: function(d) { return "–"; },
+    infoNotes: function(d) { return "+ Добавить заметку"; },
+    infoNotesPlaceholder: function(d) { return "–"; },
+    infoNotesVisibility: function(d) { return "видны только операторам"; },
+    infoLanguage: function(d) { return "Язык"; },
+    infoWebsite: function(d) { return "Сайт"; },
+    infoCart: function(d) { return "Корзина покупок"; },
+    infoStartPage: function(d) { return "Страница начала чата"; },
+    infoReferrer: function(d) { return "Источник"; },
+    infoLocation: function(d) { return "Местоположение"; },
+    infoUserAgent: function(d) { return "User agent"; },
+    infoBrowser: function(d) { return "Браузер"; },
+    infoOS: function(d) { return "ОС"; },
+    infoReferrerDirectHit: function(d) { return "Прямой заход"; },
+    infoVisitorIp: function(d) { return "IP-адрес"; },
+    statusUpdatedAutomaticallyTitle: function(d) { return "Ваш статус был автоматически обновлен"; },
+    statusUpdatedAutomaticallyDescription: function(d) { return "Вы были автоматически переведены в статус \"Отошёл\" из-за пропущенного чата. Выберите статус для продолжения."; },
+    consents: {
+      marketing: {
+        yes: function(d) { return "разрешение на маркетинг"; },
+        no: function(d) { return "нет разрешения на маркетинг"; }
+      }
+    },
+    utm: {
+      source: function(d) { return "UTM source"; },
+      medium: function(d) { return "UTM medium"; },
+      term: function(d) { return "UTM term"; },
+      campaign: function(d) { return "UTM campaign"; }
+    }
+  },
+  confirmationRequest: {
+    loadingTitle: function(d) { return "Активация email-адреса"; },
+    loadingText: function(d) { return "Обработка запроса..."; },
+    successTitle: function(d) { return "Активация email-адреса"; },
+    successText: function(d) { return "Email-адрес был успешно активирован и может быть использован для получения оффлайн-сообщений."; },
+    notFoundTitle: function(d) { return "Этот активационный код не работает"; },
+    notFoundText: function(d) { return "Либо email-адрес уже был активирован, либо в коде есть опечатка."; },
+    errorTitle: function(d) { return "Ошибка"; },
+    errorText: function(d) { return "Произошла ошибка при обработке запроса. Пожалуйста, проверьте свое интернет-соединение и попробуйте снова."; },
+    buttonGoToApp: function(d) { return "Перейти к приложению"; }
+  },
+  date: {
+    today: function(d) { return "Сегодня"; },
+    yesterday: function(d) { return "Вчера"; },
+    formats: {
+      date: function(d) { return d.day + " " + d.month + " " + d.year; },
+      time: function(d) { return d.hour + ":" + d.minute; },
+      minutes: function(d) { return d.minute + ":" + d.second; },
+      day: function(d) { return d.dayOfWeek + ", " + d.day + " " + d.month; },
+      weekDay: function(d) { return d.dayOfWeek + " " + d.day; }
+    },
+    monthNames: {
+      jan: function(d) { return "января"; },
+      feb: function(d) { return "февраля"; },
+      mar: function(d) { return "марта"; },
+      apr: function(d) { return "апреля"; },
+      may: function(d) { return "мая"; },
+      jun: function(d) { return "июня"; },
+      jul: function(d) { return "июля"; },
+      aug: function(d) { return "августа"; },
+      sep: function(d) { return "сентября"; },
+      oct: function(d) { return "октября"; },
+      nov: function(d) { return "ноября"; },
+      dec: function(d) { return "декабря"; }
+    },
+    shortMonthNames: {
+      jan: function(d) { return "Янв"; },
+      feb: function(d) { return "Фев"; },
+      mar: function(d) { return "Мар"; },
+      apr: function(d) { return "Апр"; },
+      may: function(d) { return "Май"; },
+      jun: function(d) { return "Июн"; },
+      jul: function(d) { return "Июл"; },
+      aug: function(d) { return "Авг"; },
+      sep: function(d) { return "Сен"; },
+      oct: function(d) { return "Окт"; },
+      nov: function(d) { return "Ноя"; },
+      dec: function(d) { return "Дек"; }
+    },
+    shortWeekDayNames: {
+      sun: function(d) { return "Вс"; },
+      mon: function(d) { return "Пн"; },
+      tue: function(d) { return "Вт"; },
+      wed: function(d) { return "Ср"; },
+      thu: function(d) { return "Чт"; },
+      fri: function(d) { return "Пт"; },
+      sat: function(d) { return "Сб"; }
+    },
+    weekDayNames: {
+      sun: function(d) { return "Воскресенье"; },
+      mon: function(d) { return "Понедельник"; },
+      tue: function(d) { return "Вторник"; },
+      wed: function(d) { return "Среда"; },
+      thu: function(d) { return "Четверг"; },
+      fri: function(d) { return "Пятница"; },
+      sat: function(d) { return "Суббота"; }
+    }
+  },
+  emails: {
+    activation: {
+      subject: function(d) { return "Активируйте Ваш аккаунт на Chaport.ru"; },
+      welcome: function(d) { return "Добро пожаловать в Чапорт!"; },
+      activateYourAccount: function(d) { return "Пожалуйста, активируйте Ваш аккаунт в сервисе онлайн-консультирования Чапорт, кликнув по расположенной ниже ссылке:"; },
+      ignoreThisEmail: function(d) { return "Проигнорируйте данное письмо, если Вы не регистрировались на Chaport.ru."; },
+      activateButton: function(d) { return "Активировать аккаунт"; }
+    },
+    chatTranscript: {
+      heading: function(d) { return "Ниже приведен текст переписки с " + d.name + ":"; },
+      subject: function(d) { return d.name + ": текст переписки"; }
+    },
+    chatsDecrease: {
+      subject: function(d) { return "Количество чатов уменьшилось на " + d.percentage + "%."; },
+      warning: function(d) { return "Снижение количества чатов"; },
+      greeting: function(d) { return "Привет, " + d.ownerName + "!"; },
+      heading: function(d) { return "Количество получаемых вами чатов снизилось&nbsp;на&nbsp;" + d.percentage + "%."; },
+      causes: function(d) { return "Скорее всего, это связано с переходом на бесплатный тариф и отключением функции \"авто-приглашений\", которая инициирует большинство чатов. Вы можете увидеть снижение на следующем графике:"; },
+      explanation: function(d) { return "За последние " + d.numDaysPro + " дней использования PRO-версии в среднем вы получали по <b>" + plural(d.numChatsPerDayPro, 0, ru, { one: number(d.numChatsPerDayPro, "numChatsPerDayPro") + "&nbsp;чату", few: number(d.numChatsPerDayPro, "numChatsPerDayPro") + "&nbsp;чата", other: number(d.numChatsPerDayPro, "numChatsPerDayPro") + "&nbsp;чатов" }) + "&nbsp;в&nbsp;день</b>, а после перехода на бесплатный тариф эта цифра снизилась до <b>" + plural(d.numChatsPerDayFree, 0, ru, { one: number(d.numChatsPerDayFree, "numChatsPerDayFree") + "&nbsp;чата", other: number(d.numChatsPerDayFree, "numChatsPerDayFree") + "&nbsp;чатов" }) + "&nbsp;в&nbsp;день</b>. Общее количество чатов <b>уменьшилось&nbsp;на&nbsp;" + d.percentage + "%</b>."; },
+      goToPro: function(d) { return "Вы можете перейти на PRO-тариф и увеличить количество получаемых чатов, активировав авто-приглашения, а также получить доступ к множеству других полезных функций."; },
+      labelChatsCountAutoInv: function(d) { return "Кол-во чатов начатых авто-приглашениями"; },
+      labelChatsCountIncoming: function(d) { return "Кол-во чатов начатых посетителями"; }
+    },
+    installWidget: {
+      subject: function(d) { return "Установите виджет www.chaport.ru на Ваш сайт"; },
+      header: function(d) { return "Установите виджет Чапорт на Ваш сайт"; },
+      requestedToSendEmail: function(d) { return d.senderName + " <" + d.senderEmail + "> оставил запрос на отправку Вам этого письма."; },
+      embedCode: function(d) { return "Вы можете начать использовать наш чат-виджет на Вашем сайте, вставив код ниже перед тегом </body>:"; },
+      stillDontKnowHowToInstall: function(d) { return "Не знаете как установить виджет?"; },
+      weCanHelp: function(d) { return "Именно для этого мы здесь! Отправьте нам e-mail на " + d.email + " или пообщайтесь с нами на " + d.site + "."; },
+      promoLink: function(d) { return "<a href='https://www.chaport.ru'>на нашем сайте</a>"; },
+      promoUrl: function(d) { return "https://www.chaport.ru"; },
+      websiteAdministrator: function(d) { return "Если есть администратор, занимающийся Вашим сайтом, Вы можете так же переслать это письмо ему. Наиболее вероятно, он знает, что нужно сделать!"; },
+      ignoreThisEmail: function(d) { return "Проигнорируйте данное письмо, если Вы не узнаёте лицо выше."; },
+      ignoreThisEmailYourself: function(d) { return "Проигнорируйте данное письмо, если Вы не запрашивали отправку этого письма."; }
+    },
+    offlineEmailActivation: {
+      subject: function(d) { return "Активация email-адреса для получения оффлайн-сообщений на Chaport.ru"; },
+      header: function(d) { return "Активация email-адреса"; },
+      emailHasBeenSet: function(d) { return d.requestedBy + " выбрал этот email-адрес для получения оффлайн-сообщений от своих посетителей через сервис Чапорт."; },
+      otherwiseActivate: function(d) { return "Для получения оффлайн-сообщений на данный email-адрес кликните по расположенной ниже ссылке:"; },
+      ignoreThisEmail: function(d) { return "Проигнорируйте данное письмо, если Вы не узнаете лицо, упомянутое выше, или просто не хотите получать на этот адрес оффлайн-сообщения от сервиса Чапорт."; },
+      activateButton: function(d) { return "Активировать email-адрес"; }
+    },
+    offlineMessage: {
+      subject: function(d) { return "Оффлайн сообщение от " + d.visitorName + " <" + d.visitorEmail + ">"; },
+      subjectNoEmail: function(d) { return "Оффлайн сообщение от " + d.visitorName; },
+      visitorSentOfflineMessage: function(d) { return "Посетитель только что отправил Вам оффлайн-сообщение."; },
+      openConversation: function(d) { return "Чтобы просмотреть весь разговор и ответить на это сообщение, кликните по расположенной ниже ссылке:"; },
+      replyButton: function(d) { return "Перейти на страницу диалога"; },
+      dontReplyMessage: function(d) { return "Для продолжения общения перейдите на " + d.conversationPage + "."; },
+      conversationPage: function(d) { return "страницу диалога"; },
+      namedFileSent: function(d) { return "Отправлен файл" + select(d.name, { undefined: "", other: " \"" + d.name + "\"" }) + "."; }
+    },
+    operatorActivation: {
+      subject: function(d) { return "Вас пригласили в сервис Chaport.ru"; },
+      header: function(d) { return "Добро пожаловать в Чапорт!"; },
+      youHaveBeenInvited: function(d) { return "Вы были приглашены в сервис онлайн-консультирования Чапорт пользователем " + d.inviterName + " <" + d.inviterEmail + ">."; },
+      activateYourAccount: function(d) { return "Активируйте Ваш аккаунт, кликнув по расположенной ниже ссылке:"; },
+      ignoreThisEmail: function(d) { return "Проигнорируйте данное письмо, если Вы не узнаёте пригласившего Вас пользователя."; },
+      activateButton: function(d) { return "Активировать аккаунт"; }
+    },
+    operatorOfflineMessage: {
+      subject: function(d) { return "Сообщение от " + d.host; },
+      operatorSentOfflineMessage: function(d) { return d.name + " из " + d.host + " только что отправил(а) Вам сообщение."; }
+    },
+    passwordReset: {
+      subject: function(d) { return "Сброс пароля на Chaport.ru"; },
+      greeting: function(d) { return "Привет, " + d.name + "!"; },
+      resetPassword: function(d) { return "Мы получили запрос на сброс пароля Вашего аккаунта."; },
+      clickLinkBelow: function(d) { return "Если вы отправляли этот запрос, кликните по расположенной ниже ссылке:"; },
+      ignoreThisEmail: function(d) { return "Проигнорируйте данное письмо, если Вы не запрашивали сброс пароля."; },
+      resetButton: function(d) { return "Сбросить пароль"; }
+    },
+    shared: {
+      chaportPromoUrl: function(d) { return "www.chaport.ru"; },
+      chaportTeamSignature: function(d) { return "— Ваш Чапорт"; },
+      proFeatures: {
+        disabledFeatures: function(d) { return "Следующие возможности отключены:"; },
+        autoInvitations: function(d) { return "Авто-приглашения"; },
+        visitorInfo: function(d) { return "Информация о посетителе"; },
+        typingInsight: function(d) { return "Наблюдение за печатью посетителей"; },
+        savedReplies: function(d) { return "Быстрые ответы"; },
+        visitorBan: function(d) { return "Блокировка посетителей"; },
+        API: function(d) { return "API"; },
+        and: function(d) { return " и "; },
+        muchMore: function(d) { return "многое другое"; }
+      }
+    },
+    subscriptionAlmostExpired: {
+      subject: function(d) { return "Ваша платная подписка на Chaport.ru истекает через " + plural(d.daysUntilExpires, 0, ru, { one: number(d.daysUntilExpires, "daysUntilExpires") + " день", few: number(d.daysUntilExpires, "daysUntilExpires") + " дня", other: number(d.daysUntilExpires, "daysUntilExpires") + " дней" }); },
+      warning: function(d) { return "Ваша подписка истекает"; },
+      greeting: function(d) { return "Привет, " + d.ownerName + "!"; },
+      expiresAt: function(d) { return "Ваша " + d.planName + "-подписка истекает через " + plural(d.daysUntilExpires, 0, ru, { one: number(d.daysUntilExpires, "daysUntilExpires") + " день", few: number(d.daysUntilExpires, "daysUntilExpires") + " дня", other: number(d.daysUntilExpires, "daysUntilExpires") + " дней" }) + "."; },
+      considerRenewing: function(d) { return "Для продолжения использования Чапорт подписки кликните по расположенной ниже ссылке:"; },
+      renewButton: function(d) { return "Продлить подписку"; }
+    },
+    subscriptionExpired: {
+      subject: function(d) { return "Ваша платная подписка на Chaport.ru истекла"; },
+      warning: function(d) { return "Ваша подписка истекла"; },
+      greeting: function(d) { return "Привет, " + d.ownerName + "!"; },
+      subscriptionHasExpired: function(d) { return "Ваша " + d.planName + "-подписка истекла."; },
+      considerRenewing: function(d) { return "Для возобновления подписки кликните по расположенной ниже ссылке:"; },
+      renewButton: function(d) { return "Возобновить подписку"; }
+    },
+    trialAlmostEnded: {
+      subject: function(d) { return "Ваш испытательный период на Chaport.ru истекает через " + plural(d.daysUntilExpires, 0, ru, { one: number(d.daysUntilExpires, "daysUntilExpires") + " день", few: number(d.daysUntilExpires, "daysUntilExpires") + " дня", other: number(d.daysUntilExpires, "daysUntilExpires") + " дней" }); },
+      warning: function(d) { return "Ваш испытательный период истекает"; },
+      greeting: function(d) { return "Привет, " + d.ownerName + "!"; },
+      expiresAt: function(d) { return "Ваш испытательный период истекает через " + plural(d.daysUntilExpires, 0, ru, { one: number(d.daysUntilExpires, "daysUntilExpires") + " день", few: number(d.daysUntilExpires, "daysUntilExpires") + " дня", other: number(d.daysUntilExpires, "daysUntilExpires") + " дней" }) + "."; },
+      accountWillBeDowngraded: function(d) { return "Ваш аккаунт будет переведён на бесплатный тариф."; },
+      willBeDisabledFeatures: function(d) { return "Следующие возможности будут отключены:"; }
+    },
+    trialEnded: {
+      subject: function(d) { return "Ваш испытательный период на Chaport.ru закончился"; },
+      warning: function(d) { return "Ваш испытательный период закончился"; },
+      greeting: function(d) { return "Привет, " + d.ownerName + "!"; },
+      trialEnded: function(d) { return "Ваш испытательный период закончился."; },
+      accountDowngraded: function(d) { return "Ваш аккаунт переведён на бесплатный тариф."; },
+      fewerChats: function(d) { return "Обратите внимание: теперь вам может поступать значительно меньше чатов, поскольку большинство из них инициируется авто-приглашениями."; },
+      considerRenewing: function(d) { return "Для продолжения использования Чапорт на платном тарифе кликните по расположенной ниже ссылке:"; },
+      renewButton: function(d) { return "Перейти на PRO"; }
+    }
+  },
+  emoji: {
+    people: function(d) { return "Люди"; },
+    nature: function(d) { return "Природа"; },
+    objects: function(d) { return "Объекты"; },
+    places: function(d) { return "Места"; },
+    symbols: function(d) { return "Символы"; }
+  },
+  generalSettings: {
+    autoAssign: function(d) { return "Назначать операторов автоматически"; },
+    autoReassign: function(d) { return "Передавать неотвеченные чаты автоматически"; },
+    autoClose: function(d) { return "Закрывать отвеченные чаты автоматически"; },
+    whenOperatorsOnline: function(d) { return "Когда операторы онлайн"; },
+    whenOperatorsOffline: function(d) { return "Когда операторы оффлайн"; },
+    newChats: function(d) { return "Новые чаты"; },
+    oldChats: function(d) { return "Существующие чаты"; },
+    whatAutoReassignIs: function(d) { return "Если авто-назначение включено, чат будет передан другому онлайн-оператору. В противном случае, он станет неназначенным."; },
+    afterOperatorResponse: function(d) { return "После ответа оператора"; },
+    notifications: function(d) { return "Уведомления"; },
+    offlineEmail: function(d) { return "Отправлять email-уведомления об оффлайн-сообщениях на:"; },
+    offlineEmailPlaceholder: function(d) { return "Email"; },
+    offlineEmailNote: function(d) { return "Оставьте пустым, если вы не хотите получать email-уведомления."; },
+    alertEmailSent: function(d) { return "Email с подтверждением был отправлен на этот адрес. Пожалуйста, проверьте почту."; },
+    alertEmailAlreadyActivated: function(d) { return "Email успешно подтверждён."; },
+    emailConfirmationRequired: function(d) { return "Требуется подтверждение"; },
+    emailResendConfirmation: function(d) { return "Отправить email с подтверждением снова"; },
+    unconfirmedNote: function(d) { return "Email с подтверждением был отправлен на этот адрес"; },
+    requestEmailAutomatically: function(d) { return "Запрашивать email-адрес посетителя автоматически"; },
+    gdprInform: function(d) { return "Информировать посетителей о том, как вы обрабатываете их персональные данные"; },
+    beforeStartingAChat: function(d) { return "Перед началом чата"; },
+    text: function(d) { return "Текст"; },
+    question: function(d) { return "Вопрос"; },
+    gdprInformDefaultTextWithLink: function(d) { return "Мы используем передаваемые [персональные данные](" + d.link + ") только в целях оказания поддержки"; },
+    gdprInformComment: function(d) { return "Посетители будут видеть этот текст перед началом чата."; },
+    linkText: function(d) { return "Ссылка"; },
+    youCanPasteLink: function(d) { return "Вы можете вставить ссылку, используя следующий формат:"; },
+    requestMarketingPermission: function(d) { return "Запрашивать разрешение на маркетинг"; },
+    whenYouRequestAnEmail: function(d) { return "При запросе email-адреса посетителя"; },
+    marketingPermissionComment: function(d) { return "В момент запроса email-адреса, посетители будут должны ответить на этот вопрос, выбрав 'Да' или 'Нет'."; }
+  },
+  installationCode: {
+    copyAndPasteCode: function(d) { return "Скопируйте и вставьте данный код перед тегом &lt;/body&gt; в HTML-коде вашего сайта:"; },
+    copyCode: function(d) { return "Скопировать код установки"; },
+    copyId: function(d) { return "Скопировать ID приложения"; },
+    copiedCode: function(d) { return "Ваш код установки был скопирован в буфер обмена."; },
+    copiedId: function(d) { return "Ваш ID приложения был скопирован в буфер обмена."; }
+  },
+  intervals: {
+    never: function(d) { return "Никогда"; },
+    afterXSeconds: function(d) { return "Через " + plural(d.value, 0, ru, { one: "1 секунду", few: number(d.value, "value") + " секунды", other: number(d.value, "value") + " секунд" }); },
+    afterXMinutes: function(d) { return "Через " + plural(d.value, 0, ru, { one: number(d.value, "value") + " минуту", few: number(d.value, "value") + " минуты", other: number(d.value, "value") + " минут" }); },
+    afterXHours: function(d) { return "Через " + plural(d.value, 0, ru, { one: number(d.value, "value") + " час", few: number(d.value, "value") + " часа", other: number(d.value, "value") + " часов" }); }
+  },
+  labels: {
+    and: function(d) { return "и"; },
+    yes: function(d) { return "Да"; },
+    no: function(d) { return "Нет"; },
+    proOnly: function(d) { return "Доступно только на PRO-тарифе"; },
+    upgradeToPro: function(d) { return "Подключите PRO-тариф"; },
+    toEnableIt: function(d) { return "чтобы получить доступ к этому"; }
+  },
+  landing: {
+    yourWebsite: function(d) { return "Ваш Сайт"; },
+    hiThere: function(d) { return "Привет! Представьте, что вы сейчас находитесь на своём сайте."; },
+    clickOnChatButton: function(d) { return "Кликните на кнопку нашего чата в правом нижнем углу и напишите что-нибудь."; },
+    youWillReceive: function(d) { return "Вы получите это сообщение в приложении Chaport, открытом в предыдущей вкладке веб-браузера."; },
+    tryToRespond: function(d) { return "Попробуйте ответить оттуда."; }
+  },
+  languageNames: {
+    en: function(d) { return "Английский"; },
+    ru: function(d) { return "Русский"; },
+    es: function(d) { return "Испанский"; },
+    pt: function(d) { return "Португальский"; },
+    de: function(d) { return "Немецкий"; },
+    fr: function(d) { return "Французский"; },
+    it: function(d) { return "Итальянский"; },
+    nl: function(d) { return "Голландский"; },
+    tr: function(d) { return "Турецкий"; },
+    et: function(d) { return "Эстонский"; },
+    pl: function(d) { return "Польский"; },
+    vi: function(d) { return "Вьетнамский"; },
+    lv: function(d) { return "Латышский"; },
+    lt: function(d) { return "Литовский"; },
+    id: function(d) { return "Индонезийский"; },
+    el: function(d) { return "Греческий"; },
+    uk: function(d) { return "Украинский"; }
+  },
+  login: {
+    title: function(d) { return "Добро пожаловать в Чапорт"; },
+    errorEmailRequired: function(d) { return "Email обязателен к заполнению"; },
+    errorPasswordRequired: function(d) { return "Пароль обязателен к заполнению"; },
+    errorInvalidCredentials: function(d) { return "Неверная комбинация email и пароля"; },
+    errorInactiveAccount: function(d) { return "Сначала активируйте аккаунт"; },
+    labelEmail: function(d) { return "Email"; },
+    labelPassword: function(d) { return "Пароль"; },
+    buttonSubmit: function(d) { return "Войти"; },
+    noAccount: function(d) { return "Нет аккаунта?"; },
+    register: function(d) { return "Зарегистрироваться"; },
+    forgotPassword: function(d) { return "Забыли пароль?"; },
+    resetPassword: function(d) { return "Сбросьте его"; }
+  },
+  messages: {
+    loading: function(d) { return "Загрузка..."; },
+    saving: function(d) { return "Сохранение..."; },
+    saved: function(d) { return "Сохранено!"; },
+    saveError: function(d) { return "Ошибка"; }
+  },
+  nav: {
+    chats: function(d) { return "Чаты"; },
+    operators: function(d) { return "Операторы"; },
+    reports: function(d) { return "Отчёты"; },
+    reportsTotalChats: function(d) { return "Общее кол-во чатов"; },
+    reportsAutoInvitations: function(d) { return "Чаты из авто-приглашений"; },
+    reportsWorkingHours: function(d) { return "Время работы"; },
+    settings: function(d) { return "Настройки"; },
+    generalSettings: function(d) { return "Основные"; },
+    installationCode: function(d) { return "Код установки"; },
+    appearance: function(d) { return "Внешний вид"; },
+    autoInvitations: function(d) { return "Авто-приглашения"; },
+    savedReplies: function(d) { return "Быстрые ответы"; },
+    subscriptions: function(d) { return "Тарифный план"; }
+  },
+  notifications: {
+    forcedAway: function(d) { return "Установлен статус 'Отошел'"; },
+    forcedAwayBody: function(d) { return "Вам был автоматически установлен статус 'Отошел' из-за пропущенного чата."; },
+    connectionLost: function(d) { return "Потеряно соединение"; },
+    connectionLostBody: function(d) { return "Потеряно соединение с чат-сервером."; }
+  },
+  oauth: {
+    clientWillHaveAccess: function(d) { return d.client + " сможет:"; },
+    switchAccount: function(d) { return "Поменять аккаунт"; },
+    invalidClientIdWarning: function(d) { return "Приложение, направившее Вас на эту страницу, вероятно, не было должным образом настроено. Пожалуйста, свяжитесь с его службой поддержки или напишите нам на <a href='https://www.chaport.ru' target='_blank'>www.chaport.ru</a>."; },
+    scopes: {
+      visitors_read: function(d) { return "читать информацию о посетителях"; },
+      chats_read: function(d) { return "читать чаты"; },
+      chats_write: function(d) { return "писать в чаты"; }
+    }
+  },
+  operators: {
+    newTitle: function(d) { return "Новый оператор"; },
+    addOperator: function(d) { return "Добавить оператора"; },
+    backButton: function(d) { return "Назад"; },
+    chats: function(d) { return "Чаты"; },
+    stats: function(d) { return "Статистика"; },
+    deleteOperator: function(d) { return "Удалить"; },
+    deleteOperatorConfirmation: function(d) { return "Вы уверены, что хотите удалить оператора?"; },
+    addPhoto: function(d) { return "Добавить фото"; },
+    changePhoto: function(d) { return "Изменить фото"; },
+    choosePhoto: function(d) { return "Выбрать файл..."; },
+    cropResult: function(d) { return "Результат:"; },
+    errorInactiveAccount: function(d) { return "Прежде чем добавить новых операторов, подтвердите свой email-адрес (при регистрации было выслано письмо со ссылкой)."; },
+    errorNameRequired: function(d) { return "Имя обязательно к заполнению"; },
+    errorEmailRequired: function(d) { return "Email обязателен к заполнению"; },
+    errorEmailOccupied: function(d) { return "Пользователь с этим Email-адресом уже зарегистрирован"; },
+    errorLanguageRequired: function(d) { return "Язык обязателен к заполнению"; },
+    errorRoleRequired: function(d) { return "Роль обязательна к заполнению"; },
+    name: function(d) { return "Имя"; },
+    jobTitle: function(d) { return "Должность"; },
+    email: function(d) { return "Email"; },
+    language: function(d) { return "Язык"; },
+    role: function(d) { return "Роль"; },
+    acceptOfflineMessages: function(d) { return "Принимать оффлайн-сообщения"; },
+    messageSound: function(d) { return "Звук сообщения"; },
+    defaultJobTitle: function(d) { return "Консультант"; },
+    activationRequired: function(d) { return "Требуется подтверждение"; },
+    activationEmailResend: function(d) { return "Отправить письмо еще раз"; },
+    activationEmailResendWait: function(d) { return "Вы сможете отправить письмо еще раз через " + d.time; },
+    alertEmailResent: function(d) { return "Активационное письмо отправлено на email оператора."; },
+    operatorsWaitingForSeat: function(d) { return plural(d.count, 0, ru, { one: "1 оператор ждет", few: number(d.count, "count") + " оператора ждут", other: number(d.count, "count") + " операторов ждут" }) + " свободное место"; },
+    buyMoreSeats: function(d) { return "Купить больше мест"; },
+    workingHours: function(d) { return "Рабочие часы"; },
+    mondayToFriday: function(d) { return "Пн-Пт"; },
+    saturdayToSunday: function(d) { return "Сб-Вс"; },
+    addWorkingHours: function(d) { return "+ Добавить рабочие часы"; },
+    statusAutoUpdate: function(d) { return "Авто-смена статуса"; },
+    daysOff: function(d) { return "Выходные"; },
+    dayOff: function(d) { return "Выходной"; },
+    showAllDays: function(d) { return "Показать все дни"; },
+    showDayGroups: function(d) { return "Показать группы дней"; },
+    roles: {
+      operator: function(d) { return "Оператор"; },
+      admin: function(d) { return "Администратор"; },
+      owner: function(d) { return "Владелец аккаунта"; }
+    }
+  },
+  passwordReset: {
+    successMessage: function(d) { return "Ваш пароль был успешно обновлен."; },
+    title: function(d) { return "Придумайте новый пароль"; },
+    buttonSubmit: function(d) { return "Сохранить пароль"; },
+    invalidCode: function(d) { return "Эта ссылка не работает: либо она просрочена, либо уже использована."; }
+  },
+  passwordResetRequest: {
+    successMessage: function(d) { return "Ссылка на сброс пароля была только что отправлена на Ваш email-адрес."; },
+    title: function(d) { return "Сброс пароля"; },
+    buttonSubmit: function(d) { return "Сбросить пароль"; },
+    knowPassword: function(d) { return "Знаете пароль?"; },
+    inactive: function(d) { return "Пользователь с этим email-адресом не был активирован, пожалуйста проверьте почту на наличие активационного письма."; },
+    noSuchUser: function(d) { return "Пользователь с этим email-адресом не зарегистрирован."; }
+  },
+  payments: {
+    addOperatorsInvoiceDescription: function(d) { return "Добавить " + plural(d.addedOperators, 0, ru, { one: number(d.addedOperators, "addedOperators") + " оператора", other: number(d.addedOperators, "addedOperators") + " операторов" }) + " к действующей лицензии"; },
+    newLicenseInvoiceDescription: function(d) { return "PRO-лицензия на " + plural(d.duration, 0, ru, { one: number(d.duration, "duration") + " месяц", few: number(d.duration, "duration") + " месяца", other: number(d.duration, "duration") + " месяцев" }) + " на " + plural(d.q, 0, ru, { one: number(d.q, "q") + " оператора", other: number(d.q, "q") + " операторов" }); }
+  },
+  profile: {
+    profile: function(d) { return "Аккаунт"; },
+    logout: function(d) { return "Выйти"; }
+  },
+  reports: {
+    allOperators: function(d) { return "Все операторы"; },
+    day: function(d) { return "День"; },
+    week: function(d) { return "Неделя"; },
+    lastWeek: function(d) { return "Неделя"; },
+    lastMonth: function(d) { return "Месяц"; },
+    chatsServed: function(d) { return "Чатов принято"; },
+    chatsMissed: function(d) { return "Чатов пропущено"; },
+    byAutoInvitations: function(d) { return "Из авто-приглашений"; },
+    incomingChats: function(d) { return "Входящие чаты"; },
+    hours: function(d) { return d.value + "ч"; },
+    minutes: function(d) { return d.value + "м"; },
+    seconds: function(d) { return d.value + "с"; }
+  },
+  savedReplies: {
+    addNew: function(d) { return "+ Добавить быструю фразу"; },
+    unsavedEdits: function(d) { return "Есть несохранённые изменения."; },
+    viewEdits: function(d) { return "Просмотреть изменения"; }
+  },
+  setup: {
+    install: {
+      title: function(d) { return "Установка чата"; },
+      header: function(d) { return "Установите кнопку чата на сайт"; },
+      description: function(d) { return "Скопируйте HTML-код и вставьте его перед тегом &lt;/body&gt; на вашем сайте:"; },
+      emailNote: function(d) { return "Не знаете как? Отправьте инструкцию кому-нибудь, кто может помочь:"; },
+      emailLabel: function(d) { return "вебмастер@example.com"; },
+      emailIsSentNote: function(d) { return "Инструкция по установке отправлена на " + d.email + "."; },
+      getStartedButton: function(d) { return "Приступить к работе"; }
+    },
+    profile: {
+      title: function(d) { return "Личные данные"; },
+      header: function(d) { return "Заполните ваши личные данные"; },
+      description1: function(d) { return "Пожалуйста, укажите ваше имя и загрузите фото (необязательно)."; },
+      nameLabel: function(d) { return "Имя"; }
+    },
+    welcome: {
+      title: function(d) { return "Приветствие"; },
+      header: function(d) { return "Добро пожаловать в Чапорт"; },
+      description: function(d) { return "Лучший онлайн-чат для сайта."; }
+    }
+  },
+  signUp: {
+    successTitle: function(d) { return "Спасибо!"; },
+    successSubtitle: function(d) { return "Проверьте Вашу электронную почту, на неё отправлено письмо со ссылкой для активации аккаунта."; },
+    activationEmailResend: function(d) { return "Отправить активационный email повторно"; },
+    activationEmailResendWait: function(d) { return "Вы сможете снова отправить email через " + d.time; },
+    alertEmailResent: function(d) { return "Активационное письмо было отправлено, пожалуйста проверьте Вашу электронную почту"; },
+    alertActivationEmailSent: function(d) { return "Активационное письмо было отправлено на Вашу электронную почту"; },
+    title: function(d) { return "Регистрация в Chaport"; },
+    errorNameRequired: function(d) { return "Имя обязательно к заполнению"; },
+    errorEmailRequired: function(d) { return "Email обязателен к заполнению"; },
+    errorEmailInvalid: function(d) { return "Email некорректен"; },
+    errorEmailTaken: function(d) { return "Пользователь с этим Email-адресом уже зарегистрирован"; },
+    errorEmailTakenAndNotActivated: function(d) { return "Пользователь с этим Email-адресом уже зарегистрирован, для активации аккаунта на данный адрес ранее было выслано письмо со ссылкой"; },
+    errorPasswordRequired: function(d) { return "Пароль обязателен к заполнению"; },
+    errorPasswordInvalid: function(d) { return "Пароль должен быть в длину от 6 до 20 символов"; },
+    labelName: function(d) { return "Имя"; },
+    labelEmail: function(d) { return "Email"; },
+    labelPassword: function(d) { return "Пароль"; },
+    buttonSubmit: function(d) { return "Зарегистрироваться"; },
+    haveAccount: function(d) { return "Уже есть аккаунт?"; },
+    login: function(d) { return "Войти"; },
+    agreeToTerms: function(d) { return "Регистрируя аккаунт, вы принимаете <a href='" + d.offerUrl + "' target='_blank'>условия оферты</a>"; }
+  },
+  sounds: {
+    beep: function(d) { return "Бип"; },
+    beep2: function(d) { return "Бип 2"; },
+    drop: function(d) { return "Капля"; },
+    glassStick: function(d) { return "Стеклянная палочка"; },
+    maraca: function(d) { return "Маракасы"; },
+    maracaLong: function(d) { return "Маракасы длинная"; },
+    bellAndBubble: function(d) { return "Пузырь с колокольчиком"; },
+    triplet: function(d) { return "Триоль"; },
+    bubble: function(d) { return "Пузырь"; },
+    wineGlass: function(d) { return "Бокал"; },
+    joy: function(d) { return "Веселая"; },
+    magic: function(d) { return "Магия"; },
+    ios: function(d) { return "iOS"; },
+    bellMuted: function(d) { return "Колокольчик спокойный"; }
+  },
+  status: {
+    online: function(d) { return "Онлайн"; },
+    "mobile-online": function(d) { return "Онлайн с телефона"; },
+    offline: function(d) { return "Оффлайн"; },
+    away: function(d) { return "Отошёл"; },
+    invisible: function(d) { return "Невидимка"; },
+    "off-online": function(d) { return "Ожидание места..."; },
+    "off-invisible": function(d) { return "Ожидание места..."; }
+  },
+  subscriptions: {
+    yourActivePlan: function(d) { return "Ваш тариф – "; },
+    yourNextPlan: function(d) { return "Тариф – "; },
+    from: function(d) { return "с"; },
+    to: function(d) { return "по"; },
+    paidOperators: function(d) { return "Оплаченные операторы:"; },
+    linkAddOperators: function(d) { return "Добавить операторов"; },
+    current: function(d) { return "Ваша действующая подписка"; },
+    noActiveSubscription: function(d) { return "У Вас нет действующей подписки в данный момент"; },
+    unlimited: function(d) { return "неограничено"; },
+    unlimitedTrial: function(d) { return "неограничено (пробная версия)"; },
+    buyNext: function(d) { return "Оплатить следующий период"; },
+    daysLeftCount: function(d) { return "(" + plural(d.daysLeft, 0, ru, { one: "остался " + number(d.daysLeft, "daysLeft") + " день", few: "осталось " + number(d.daysLeft, "daysLeft") + " дня", other: "осталось " + number(d.daysLeft, "daysLeft") + " дней" }) + ")"; },
+    priceFrom: function(d) { return "(от " + d.price + "/мес)"; },
+    alreadyPaidForNext: function(d) { return "Вы также оплатили подписку на следующий период:"; },
+    recurrent: function(d) { return "Нужная для продления сумма будет автоматически списана с вашей карты по истечении срока лицензии."; },
+    updateSubscription: function(d) { return "Изменить подписку"; },
+    cancelSubscription: function(d) { return "Отменить подписку"; },
+    contactAdminForPro: function(d) { return "Пожалуйста, обратитесь к администратору аккаунта для покупки PRO-версии."; },
+    contactAdminToUpdateSubscription: function(d) { return "Пожалуйста, обратитесь к администратору аккаунта изменения подписки."; },
+    productName: function(d) { return "Chaport PRO на " + plural(d.q, 0, ru, { one: "1 оператора", other: number(d.q, "q") + " операторов" }) + " c " + select(d.duration, { "1": "помесячной оплатой", "12": "погодичной оплатой", "3": "оплатой каждые 3 месяца", other: "оплатой каждые " + "#" + " месяцев" }); },
+    paymentProcessing: function(d) { return "Спасибо, что выбрали тариф Chaport PRO! Ваш платеж прошел, но пока что не обработан. Обычно обработка занимает не более чем пару минут."; },
+    alertPaymentProcessed: function(d) { return "Ваш платеж был успешно обработан. Chaport PRO активирован!"; },
+    updated: function(d) { return "Ваша подписка была успешно изменена."; },
+    canceled: function(d) { return "Ваша подписка была успешно отменена."; },
+    addOperators: {
+      title: function(d) { return "Расширение действующей лицензии"; },
+      description: function(d) { return "Укажите, какое кол-во операторов вы хотите добавить к текущей лицензии."; },
+      labels: {
+        total: function(d) { return "Итого к оплате"; },
+        count: function(d) { return "Кол-во операторов"; }
+      },
+      notes: {
+        currentLicense: function(d) { return "Сейчас вы имеете лицензию на " + plural(d.q, 0, ru, { one: number(d.q, "q") + " оператора", other: number(d.q, "q") + " операторов" }) + ", оплаченную до " + d.validTo + " (осталось " + plural(d.daysLeft, 0, ru, { one: number(d.daysLeft, "daysLeft") + " день", few: number(d.daysLeft, "daysLeft") + " дня", other: number(d.daysLeft, "daysLeft") + " дней" }) + ")."; },
+        discount: function(d) { return "При добавлении новых операторов к текущей лицензии Вы получаете ту же скидку, что и при первоначальной оплате лицензии сроком на " + plural(d.duration, 0, ru, { one: number(d.duration, "duration") + " месяц", few: number(d.duration, "duration") + " месяца", other: number(d.duration, "duration") + " месяцев" }) + " (" + d.discount + ")."; },
+        perOperatorPrice: function(d) { return "Стоимость лицензии на одного оператора: " + d.monthPrice + "/мес. (" + d.dayPrice + "/день)"; },
+        perOperatorTotal: function(d) { return plural(d.payForDays, 0, ru, { one: number(d.payForDays, "payForDays") + " день", few: number(d.payForDays, "payForDays") + " дня", other: number(d.payForDays, "payForDays") + " дней" }) + " &times; " + d.dayPrice + " за добавленного оператора"; }
+      }
+    },
+    free: {
+      limited: function(d) { return "Ограниченный функционал"; },
+      planName: function(d) { return "Бесплатный"; }
+    },
+    newLicense: {
+      title: function(d) { return "Новая лицензия"; },
+      timeframe: function(d) { return "Лицензия будет действительна с " + d.from + " по " + d.to; },
+      optionMonth: function(d) { return plural(d.months, 0, ru, { one: number(d.months, "months") + " месяц", few: number(d.months, "months") + " месяца", other: number(d.months, "months") + " месяцев" }) + " " + plural(d.discount, 0, ru, { "0": "", other: "(-" + number(d.discount, "discount") + "%)" }); },
+      pricePerOperator: function(d) { return d.price + " за оператора в месяц"; },
+      labels: {
+        duration: function(d) { return "Срок подписки"; },
+        count: function(d) { return "Кол-во операторов"; },
+        total: function(d) { return "Итого"; }
+      }
+    },
+    payment: {
+      converted: function(d) { return "Списание пройдет в " + d.currencyTo + ". " + d.currencyFrom + "/" + d.currencyTo + " = " + d.xrate; },
+      goto: function(d) { return "Перейти к оплате"; },
+      secure: function(d) { return "Безопасное соединение"; },
+      title: function(d) { return "Оплата"; },
+      submit: function(d) { return "Оплатить"; },
+      alerts: {
+        success: function(d) { return "Ваш платеж успешно прошел"; },
+        externalError: function(d) { return "Оплата не удалась, пожалуйста, попробуйте позднее"; },
+        "3dSecureRedirect": function(d) { return "Совершается переход на страницу Вашего банка для продолжения оплаты"; },
+        internalError: function(d) { return "Оплата не удалась, пожалуйста, попробуйте позднее"; },
+        serverConnectionError: function(d) { return "Оплата не удалась, пожалуйста, попробуйте позднее"; }
+      },
+      labels: {
+        card: function(d) { return "Номер карты"; },
+        name: function(d) { return "Имя владельца"; },
+        expDate: function(d) { return "Действует до ММ/ГГ"; }
+      }
+    },
+    pro: {
+      buy: function(d) { return "Купить PRO-версию"; },
+      planName: function(d) { return "PRO"; },
+      features: {
+        header: function(d) { return "Вам будут доступны:"; },
+        itemAutoInvitations: function(d) { return "Авто-приглашения"; },
+        itemVisitorInfo: function(d) { return "Информация о посетителе"; },
+        itemTypingInsight: function(d) { return "Наблюдение за печатью посетителей"; }
+      }
+    }
+  },
+  welcome: {
+    welcomeToChaport: function(d) { return "Добро пожаловать в Чапорт!"; },
+    goodOldBrag: function(d) { return "Онлайн-чат, созданный быть удобным."; },
+    agreeToTerms: function(d) { return "Нажимая Продолжить, вы принимаете <a href='" + d.offerUrl + "' target='_blank'>условия оферты</a>."; },
+    "continue": function(d) { return "Продолжить"; }
+  },
+  widget: {
+    messageEdited: function(d) { return "Исправлено"; },
+    messageSent: function(d) { return "Отправка..."; },
+    messageRead: function(d) { return "Прочитано"; },
+    messageDelivered: function(d) { return "Отправлено. Не прочитано"; },
+    currentlyOnlineText: function(d) { return "Мы онлайн и готовы помочь!"; },
+    recentlyActiveText: function(d) { return "Отправьте нам сообщение. Мы ответим Вам в ближайшее время!"; },
+    currentlyOnline: function(d) { return "Онлайн"; },
+    lastActiveInMinutes: function(d) { return plural(d.operators, 0, ru, { one: "Был активен", other: "Были активны" }) + " " + plural(d.minutes, 0, ru, { one: number(d.minutes, "minutes") + " минуту", few: number(d.minutes, "minutes") + " минуты", other: number(d.minutes, "minutes") + " минут" }) + " назад"; },
+    lastActiveInHours: function(d) { return plural(d.operators, 0, ru, { one: "Был активен", other: "Были активны" }) + " " + plural(d.hours, 0, ru, { one: number(d.hours, "hours") + " час", few: number(d.hours, "hours") + " часа", other: number(d.hours, "hours") + " часов" }) + " назад"; },
+    lastActiveRecently: function(d) { return "Недавно " + plural(d.operators, 0, ru, { one: "был активен", other: "были активны" }); },
+    inputLabel: function(d) { return "Введите ваше сообщение..."; },
+    emailRequestText: function(d) { return "Вы можете указать ваш email для получения уведомления об ответе:"; },
+    emailDefinedText: function(d) { return "Вы будете уведомлены здесь и по email:"; },
+    emailRequestEdit: function(d) { return "изм."; },
+    emailRequestEmailRequired: function(d) { return "Пожалуйста введите свой email-адрес."; },
+    emailRequestEmailInvalid: function(d) { return "Это не похоже не email-address."; },
+    acceptPrivacyPolicy: function(d) { return "Даю согласие на обработку"; },
+    acceptPrivacyPolicyLinkText: function(d) { return "персональных данных"; },
+    privacyPolicyShouldBeAccepted: function(d) { return "Необходимо дать согласие на обработку персональных данных"; },
+    conversationDeleted: function(d) { return "Этот разговор был удален оператором."; },
+    refreshToStartNewConversation: function(d) { return "Обновите страницу, чтобы начать новый чат."; },
+    joined: function(d) { return "присоединился"; },
+    teamTitleDefault: function(d) { return "Служба поддержки"; },
+    poweredBy: function(d) { return "Чат для сайта"; },
+    consent: {
+      yesPlease: function(d) { return "Да, пожалуйста"; },
+      noThanks: function(d) { return "Нет, спасибо"; },
+      chooseOption: function(d) { return "Пожалуйста, ответьте на вопрос:"; },
+      gdprInformDefaultText: function(d) { return "Мы используем передаваемые персональные данные только в целях оказания поддержки"; },
+      marketingPermissionDefaultText: function(d) { return "Хотели бы вы слышать о наших предложениях и услугах?"; }
+    }
+  },
+  widgetDummy: {
+    today: function(d) { return "Сегодня"; },
+    operatorName: function(d) { return "Елена Иванова"; },
+    jobTitle: function(d) { return "Консультант"; },
+    visitorMessage0: function(d) { return "Здравствуйте!"; },
+    visitorMessage0Time: function(d) { return "10:01"; },
+    visitorMessage1: function(d) { return "У вас есть в наличии iPhone 6S 128gb?"; },
+    visitorMessage1Time: function(d) { return "10:01"; },
+    operatorMessage1: function(d) { return "Да, у нас есть такие модели на складе"; },
+    operatorMessage1Time: function(d) { return "10:02"; },
+    visitorMessage2: function(d) { return "Спасибо! Возьму два! 😀"; },
+    visitorMessage2Time: function(d) { return "10:03"; }
+  }
+}
+;
